@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Iuran Sampah - BUPDA Padangsambian</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS (XLSX) CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            background: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), url('bubda.jpg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: inherit;
+            filter: blur(0px);
+            z-index: -1;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #printable-receipt, #printable-receipt * { visibility: visible; }
+            #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- Header / Navbar -->
+    <header class="glass-dark text-white sticky top-0 z-40 shadow-xl border-b border-emerald-500/30">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <img src="ChatGPT Image 8 Jun 2026, 11.31.32.png" 
+                     onerror="this.onerror=null; this.src='bubda.jpeg';" 
+                     alt="Logo BUPDA" 
+                     class="h-12 w-auto object-contain bg-white rounded-lg p-1 shadow-md">
+                <div>
+                    <h1 class="font-bold text-lg md:text-xl text-emerald-400 tracking-wide uppercase">BUPDA PADANGSAMBIAN</h1>
+                    <p class="text-xs text-slate-300">Pengelolaan & Monitoring Iuran Sampah Desa Adat</p>
+                </div>
+            </div>
+
+            <!-- User Auth Status -->
+            <div id="nav-user-info" class="flex items-center space-x-3">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full flex-grow">
+
+        <!-- VIEW 1: AUTHENTICATION MODAL (If Not Logged In) -->
+        <div id="auth-view" class="max-w-md mx-auto my-8">
+            <div class="glass-card rounded-2xl shadow-2xl p-6 md:p-8 border-t-4 border-emerald-600">
+                <div class="text-center mb-6">
+                    <img src="ChatGPT Image 8 Jun 2026, 11.31.32.png" onerror="this.src='bubda.jpeg'" class="h-20 mx-auto mb-2 object-contain">
+                    <h2 class="text-2xl font-bold text-slate-800">Sistem Iuran Sampah</h2>
+                    <p class="text-sm text-slate-600">Silakan login atau daftar akun baru</p>
+                </div>
+
+                <!-- Tabs Login / Register -->
+                <div class="flex border-b border-slate-200 mb-6">
+                    <button id="tab-login-btn" onclick="switchAuthTab('login')" class="w-1/2 py-2 text-center font-semibold border-b-2 border-emerald-600 text-emerald-600">Masuk (Login)</button>
+                    <button id="tab-register-btn" onclick="switchAuthTab('register')" class="w-1/2 py-2 text-center font-semibold text-slate-500 hover:text-emerald-600">Daftar Akun</button>
+                </div>
+
+                <!-- FORM LOGIN -->
+                <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Username</label>
+                        <input type="text" id="login-username" required placeholder="Masukkan username" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Password</label>
+                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Peran / Role</label>
+                        <select id="login-role" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="petugas">Petugas Iuran</option>
+                            <option value="admin">Administrator (Monitoring)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition shadow-lg flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i> Masuk Sekarang
+                    </button>
+                    
+                    <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-xs text-slate-600 mt-4">
+                        <p class="font-bold text-emerald-800 mb-1"><i class="fa-solid fa-circle-info"></i> Akun Demo Default:</p>
+                        <p>• <b>Admin:</b> admin / admin123</p>
+                        <p>• <b>Petugas:</b> petugas1 / 123456</p>
+                    </div>
+                </form>
+
+                <!-- FORM REGISTRASI -->
+                <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap</label>
+                        <input type="text" id="reg-name" required placeholder="Nama Petugas / Admin" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Username Baru</label>
+                        <input type="text" id="reg-username" required placeholder="Buat username unik" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Password</label>
+                        <input type="password" id="reg-password" required placeholder="Minimal 6 karakter" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Daftar Sebagai Role</label>
+                        <select id="reg-role" onchange="toggleWilayahField()" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="petugas">Petugas Iuran Lapangan</option>
+                            <option value="admin">Administrator / Pengawas</option>
+                        </select>
+                    </div>
+                    <div id="wilayah-container">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Wilayah / Banjar Tugas</label>
+                        <input type="text" id="reg-wilayah" placeholder="Contoh: Banjar Padangambian / Sector 1" class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition shadow-lg flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> Buat Akun Baru
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- VIEW 2: DASHBOARD PETUGAS IURAN -->
+        <div id="petugas-view" class="space-y-6 hidden">
+            <!-- Banner Petugas -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl flex flex-wrap justify-between items-center gap-4 border-l-8 border-emerald-500">
+                <div>
+                    <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full uppercase">Panel Petugas Lapangan</span>
+                    <h2 class="text-2xl font-extrabold text-slate-800 mt-1" id="petugas-welcome">Selamat Datang</h2>
+                    <p class="text-sm text-slate-600" id="petugas-zone-info">Wilayah Binaan: -</p>
+                </div>
+                <!-- Tombol Excel khusus Petugas -->
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="downloadTemplate()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-arrow-down"></i> Template Excel
+                    </button>
+                    <label class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition cursor-pointer flex items-center gap-2">
+                        <i class="fa-solid fa-file-import"></i> Import Excel Data Warga
+                        <input type="file" accept=".xlsx, .xls, .csv" onchange="importExcel(event)" class="hidden">
+                    </label>
+                    <button onclick="exportExcel()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-excel"></i> Export Data (.xlsx)
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Form Input Nominal Iuran (Manual) -->
+                <div class="glass-card rounded-2xl p-6 shadow-xl h-fit border-t-4 border-emerald-500">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-hand-holding-dollar text-emerald-600"></i> Input Pembayaran Iuran
+                    </h3>
+                    <form onsubmit="handleInputIuran(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Pilih Warga / Pelanggan</label>
+                            <select id="input-pelanggan-id" required class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                <option value="">-- Pilih Pelanggan --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Bulan Pembayaran</label>
+                            <select id="input-bulan" required class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                <option value="Januari 2026">Januari 2026</option>
+                                <option value="Februari 2026">Februari 2026</option>
+                                <option value="Maret 2026">Maret 2026</option>
+                                <option value="April 2026">April 2026</option>
+                                <option value="Mei 2026">Mei 2026</option>
+                                <option value="Juni 2026" selected>Juni 2026</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nominal Iuran (Rp)</label>
+                            <input type="number" id="input-nominal" min="60000" max="1000000" step="1000" required 
+                                   placeholder="Rentang: 60.000 - 1.000.000" 
+                                   class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <p class="text-[11px] text-slate-500 mt-1">*Batas iuran resmi: Rp 60.000 s/d Rp 1.000.000</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Metode Pembayaran</label>
+                            <select id="input-metode" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                <option value="Tunai / Cash">Tunai / Cash</option>
+                                <option value="Transfer Bank / QRIS">Transfer Bank / QRIS</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition shadow-md flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-circle-check"></i> Simpan Pembayaran
+                        </button>
+                    </form>
+
+                    <!-- Form Tambah Warga Baru oleh Petugas -->
+                    <div class="mt-8 pt-6 border-t border-slate-200">
+                        <h4 class="font-bold text-sm text-slate-700 mb-3"><i class="fa-solid fa-user-plus text-blue-600"></i> Tambah Pelanggan Baru</h4>
+                        <form onsubmit="handleTambahPelanggan(event)" class="space-y-3">
+                            <input type="text" id="add-nama" placeholder="Nama Lengkap Warga" required class="w-full px-3 py-2 text-sm rounded border border-slate-300">
+                            <input type="text" id="add-alamat" placeholder="Alamat / No. Rumah" required class="w-full px-3 py-2 text-sm rounded border border-slate-300">
+                            <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 rounded transition">
+                                + Tambah Ke Daftar Warga
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tabel Data Pelanggan Petugas -->
+                <div class="glass-card rounded-2xl p-6 shadow-xl lg:col-span-2">
+                    <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                        <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-users text-blue-600"></i> Daftar Warga Binaan Saya</h3>
+                        <span id="petugas-total-count" class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full">Total: 0 Warga</span>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-slate-200">
+                        <table class="w-full text-left text-sm text-slate-700">
+                            <thead class="bg-slate-100 text-slate-700 uppercase text-xs font-bold border-b">
+                                <tr>
+                                    <th class="py-3 px-4">No Reg</th>
+                                    <th class="py-3 px-4">Nama Warga</th>
+                                    <th class="py-3 px-4">Alamat</th>
+                                    <th class="py-3 px-4">Status Iuran</th>
+                                    <th class="py-3 px-4">Nominal</th>
+                                    <th class="py-3 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="petugas-table-body" class="divide-y divide-slate-200 bg-white/50">
+                                <!-- Dynamic JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: DASHBOARD ADMIN & MONITORING -->
+        <div id="admin-view" class="space-y-6 hidden">
+            <!-- Summary Widgets -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="glass-card p-5 rounded-2xl shadow-lg border-l-4 border-emerald-500">
+                    <p class="text-xs font-bold text-slate-500 uppercase">Total Pendapatan Iuran</p>
+                    <h3 class="text-2xl font-black text-emerald-600 mt-1" id="stat-total-uang">Rp 0</h3>
+                    <p class="text-[11px] text-slate-500 mt-1"><i class="fa-solid fa-wallet"></i> Penerimaan Terverifikasi</p>
+                </div>
+                <div class="glass-card p-5 rounded-2xl shadow-lg border-l-4 border-blue-500">
+                    <p class="text-xs font-bold text-slate-500 uppercase">Warga Lunas</p>
+                    <h3 class="text-2xl font-black text-blue-600 mt-1" id="stat-lunas-count">0</h3>
+                    <p class="text-[11px] text-slate-500 mt-1"><i class="fa-solid fa-circle-check"></i> Sudah Membayar</p>
+                </div>
+                <div class="glass-card p-5 rounded-2xl shadow-lg border-l-4 border-red-500">
+                    <p class="text-xs font-bold text-slate-500 uppercase">Belum Membayar</p>
+                    <h3 class="text-2xl font-black text-red-600 mt-1" id="stat-belum-count">0</h3>
+                    <p class="text-[11px] text-slate-500 mt-1"><i class="fa-solid fa-clock"></i> Tunggakan Iuran</p>
+                </div>
+                <div class="glass-card p-5 rounded-2xl shadow-lg border-l-4 border-amber-500">
+                    <p class="text-xs font-bold text-slate-500 uppercase">Total Pelanggan Terdaftar</p>
+                    <h3 class="text-2xl font-black text-amber-600 mt-1" id="stat-total-pelanggan">0</h3>
+                    <p class="text-[11px] text-slate-500 mt-1"><i class="fa-solid fa-users"></i> Wilayah Padangsambian</p>
+                </div>
+            </div>
+
+            <!-- Monitoring Table Panel -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex flex-wrap justify-between items-center gap-4">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-slate-800"><i class="fa-solid fa-chart-line text-emerald-600"></i> Monitoring Real-Time Iuran Sampah</h3>
+                        <p class="text-xs text-slate-500">Pantau penerimaan iuran dari seluruh petugas lapangan BUPDA</p>
+                    </div>
+
+                    <!-- Actions & Export -->
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="downloadTemplate()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-arrow-down"></i> Template Excel
+                        </button>
+                        <label class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-lg transition cursor-pointer flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-import"></i> Import Data Excel
+                            <input type="file" accept=".xlsx, .xls, .csv" onchange="importExcel(event)" class="hidden">
+                        </label>
+                        <button onclick="exportExcel()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-excel"></i> Export Rekap (.xlsx)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters Toolbar -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-100 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Filter Petugas Lapangan:</label>
+                        <select id="filter-petugas" onchange="applyFilters()" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="ALL">Semua Petugas</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Filter Status Pembayaran:</label>
+                        <select id="filter-status" onchange="applyFilters()" class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="ALL">Semua Status (Lunas & Belum)</option>
+                            <option value="LUNAS">Sudah Membayar (Lunas)</option>
+                            <option value="BELUM">Belum Membayar</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Cari Warga / No Reg / Alamat:</label>
+                        <input type="text" id="filter-search" oninput="applyFilters()" placeholder="Ketik kata kunci pencarian..." class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Data Table -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left text-sm text-slate-700">
+                        <thead class="bg-slate-800 text-white uppercase text-xs font-semibold">
+                            <tr>
+                                <th class="py-3 px-4">No Reg</th>
+                                <th class="py-3 px-4">Nama Warga</th>
+                                <th class="py-3 px-4">Alamat</th>
+                                <th class="py-3 px-4">Petugas Penanggung Jawab</th>
+                                <th class="py-3 px-4">Bulan</th>
+                                <th class="py-3 px-4">Nominal (Rp)</th>
+                                <th class="py-3 px-4">Status</th>
+                                <th class="py-3 px-4 text-center">Struk / Cetak</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body" class="divide-y divide-slate-200 bg-white">
+                            <!-- Injected JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Cetak Struk Pembayaran -->
+    <div id="receipt-modal" class="fixed inset-0 bg-black/60 z-50 flex justify-center items-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeReceiptModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+            
+            <div id="printable-receipt" class="p-4 border border-slate-300 rounded-lg text-slate-800 space-y-3">
+                <div class="text-center border-b pb-3 border-slate-200">
+                    <img src="ChatGPT Image 8 Jun 2026, 11.31.32.png" onerror="this.src='bubda.jpeg'" class="h-14 mx-auto mb-1">
+                    <h4 class="font-bold text-base text-emerald-800">BUPDA PADANGSAMBIAN</h4>
+                    <p class="text-[11px] text-slate-500">Bukti Resmi Pembayaran Retribusi Iuran Sampah</p>
+                </div>
+                <div class="text-xs space-y-1.5 pt-2">
+                    <div class="flex justify-between"><span class="text-slate-500">No. Transaksi:</span><span id="rec-id" class="font-mono font-bold">TRX-000</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Tanggal Bayar:</span><span id="rec-date">-</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">No. Registrasi Warga:</span><span id="rec-noreg" class="font-bold">-</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Nama Pelanggan:</span><span id="rec-nama" class="font-bold">-</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Alamat:</span><span id="rec-alamat">-</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Petugas Penerima:</span><span id="rec-petugas">-</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Periode Bulan:</span><span id="rec-bulan" class="font-semibold text-emerald-700">-</span></div>
+                    <hr class="my-2 border-dashed">
+                    <div class="flex justify-between text-sm font-black"><span class="text-slate-700">Total Nominal:</span><span id="rec-nominal" class="text-emerald-600">Rp 0</span></div>
+                    <div class="flex justify-between text-[11px]"><span class="text-slate-500">Status Pembayaran:</span><span class="text-emerald-700 font-bold uppercase">LUNAS</span></div>
+                </div>
+                <div class="text-[10px] text-center text-slate-400 pt-3 border-t border-slate-100">
+                    <p>Terima Kasih Telah Menjaga Kebersihan Padangsambian</p>
+                    <p>"Kecilkan Sampah, Jaga Bumi Kita"</p>
+                </div>
+            </div>
+
+            <div class="mt-4 flex gap-2">
+                <button onclick="window.print()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-print"></i> Cetak Struk / Kuitansi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="glass-dark text-slate-400 text-xs text-center py-4 border-t border-emerald-500/20 mt-8">
+        <p>&copy; 2026 BUPDA Padangsambian - Sistem Informasi Pengelolaan Iuran Sampah Mandiri.</p>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- DATA PERSISTENCE & INITIALIZATION ---
+        const DEFAULT_USERS = [
+            { username: 'admin', password: 'admin123', name: 'Administrator BUPDA', role: 'admin', wilayah: 'Pusat' },
+            { username: 'petugas1', password: '123456', name: 'I Made Suardana', role: 'petugas', wilayah: 'Banjar Padangsambian' },
+            { username: 'petugas2', password: '123456', name: 'I Nyoman Rai', role: 'petugas', wilayah: 'Banjar Balun' }
+        ];
+
+        const DEFAULT_CUSTOMERS = [
+            { id: 'REG-101', name: 'I Wayan Koster', address: 'Jl. Gunung Agung No. 12', petugasUsername: 'petugas1', month: 'Juni 2026', amount: 75000, status: 'LUNAS', payDate: '2026-06-02 09:30' },
+            { id: 'REG-102', name: 'Ketut Agus', address: 'Jl. Padangsambian No. 45', petugasUsername: 'petugas1', month: 'Juni 2026', amount: 0, status: 'BELUM', payDate: '-' },
+            { id: 'REG-103', name: 'Ni Luh Putu', address: 'Gg. Sakura No. 8', petugasUsername: 'petugas1', month: 'Juni 2026', amount: 100000, status: 'LUNAS', payDate: '2026-06-03 14:15' },
+            { id: 'REG-104', name: 'Gede Suarsa', address: 'Jl. Tangkuban Perahu No. 88', petugasUsername: 'petugas2', month: 'Juni 2026', amount: 60000, status: 'LUNAS', payDate: '2026-06-01 11:00' },
+            { id: 'REG-105', name: 'Made Wira', address: 'Jl. Subak No. 19', petugasUsername: 'petugas2', month: 'Juni 2026', amount: 0, status: 'BELUM', payDate: '-' }
+        ];
+
+        let appUsers = JSON.parse(localStorage.getItem('bupda_users')) || DEFAULT_USERS;
+        let appCustomers = JSON.parse(localStorage.getItem('bupda_customers')) || DEFAULT_CUSTOMERS;
+        let currentUser = JSON.parse(localStorage.getItem('bupda_current_user')) || null;
+
+        function saveData() {
+            localStorage.setItem('bupda_users', JSON.stringify(appUsers));
+            localStorage.setItem('bupda_customers', JSON.stringify(appCustomers));
+            localStorage.setItem('bupda_current_user', JSON.stringify(currentUser));
+        }
+
+        // --- AUTHENTICATION ENGINE ---
+        function renderNavbar() {
+            const navContainer = document.getElementById('nav-user-info');
+            if (currentUser) {
+                navContainer.innerHTML = `
+                    <div class="text-right hidden sm:block">
+                        <p class="font-bold text-sm text-white">${currentUser.name}</p>
+                        <p class="text-[11px] text-emerald-400 uppercase font-semibold">${currentUser.role === 'admin' ? 'Administrator' : 'Petugas: ' + currentUser.wilayah}</p>
+                    </div>
+                    <button onclick="handleLogout()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition flex items-center gap-1">
+                        <i class="fa-solid fa-right-from-bracket"></i> Keluar
+                    </button>
+                `;
+            } else {
+                navContainer.innerHTML = `
+                    <span class="text-xs text-slate-300"><i class="fa-solid fa-lock"></i> Belum Login</span>
+                `;
+            }
+        }
+
+        function switchAuthTab(tab) {
+            const loginForm = document.getElementById('login-form');
+            const regForm = document.getElementById('register-form');
+            const tabLoginBtn = document.getElementById('tab-login-btn');
+            const tabRegBtn = document.getElementById('tab-register-btn');
+
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+                tabLoginBtn.className = "w-1/2 py-2 text-center font-semibold border-b-2 border-emerald-600 text-emerald-600";
+                tabRegBtn.className = "w-1/2 py-2 text-center font-semibold text-slate-500 hover:text-emerald-600";
+            } else {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                tabRegBtn.className = "w-1/2 py-2 text-center font-semibold border-b-2 border-emerald-600 text-emerald-600";
+                tabLoginBtn.className = "w-1/2 py-2 text-center font-semibold text-slate-500 hover:text-emerald-600";
+            }
+        }
+
+        function toggleWilayahField() {
+            const role = document.getElementById('reg-role').value;
+            const container = document.getElementById('wilayah-container');
+            if (role === 'admin') {
+                container.classList.add('hidden');
+            } else {
+                container.classList.remove('hidden');
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const uname = document.getElementById('login-username').value.trim();
+            const pass = document.getElementById('login-password').value;
+            const role = document.getElementById('login-role').value;
+
+            const found = appUsers.find(u => u.username.toLowerCase() === uname.toLowerCase() && u.password === pass && u.role === role);
+
+            if (found) {
+                currentUser = found;
+                saveData();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Login Berhasil!',
+                    text: `Selamat datang, ${found.name}`,
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    initAppView();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Login',
+                    text: 'Username, password, atau peranan tidak sesuai!'
+                });
+            }
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value.trim();
+            const uname = document.getElementById('reg-username').value.trim();
+            const pass = document.getElementById('reg-password').value;
+            const role = document.getElementById('reg-role').value;
+            const wilayah = document.getElementById('reg-wilayah').value.trim() || 'Wilayah Umum';
+
+            if (appUsers.some(u => u.username.toLowerCase() === uname.toLowerCase())) {
+                Swal.fire({ icon: 'warning', title: 'Username Terpakai', text: 'Gunakan username lain!' });
+                return;
+            }
+
+            const newUser = { username: uname, password: pass, name: name, role: role, wilayah: wilayah };
+            appUsers.push(newUser);
+            saveData();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Registrasi Berhasil!',
+                text: 'Akun telah terdaftar. Silakan login.',
+                timer: 1800,
+                showConfirmButton: false
+            }).then(() => {
+                switchAuthTab('login');
+                document.getElementById('login-username').value = uname;
+                document.getElementById('login-password').value = '';
+            });
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            saveData();
+            initAppView();
+        }
+
+        // --- DASHBOARD ROUTING & RENDERING ---
+        function initAppView() {
+            renderNavbar();
+            const authView = document.getElementById('auth-view');
+            const petugasView = document.getElementById('petugas-view');
+            const adminView = document.getElementById('admin-view');
+
+            authView.classList.add('hidden');
+            petugasView.classList.add('hidden');
+            adminView.classList.add('hidden');
+
+            if (!currentUser) {
+                authView.classList.remove('hidden');
+            } else if (currentUser.role === 'petugas') {
+                petugasView.classList.remove('hidden');
+                renderPetugasDashboard();
+            } else if (currentUser.role === 'admin') {
+                adminView.classList.remove('hidden');
+                renderAdminDashboard();
+            }
+        }
+
+        // --- PETUGAS LOGIC ---
+        function renderPetugasDashboard() {
+            document.getElementById('petugas-welcome').innerText = `Halo, ${currentUser.name}`;
+            document.getElementById('petugas-zone-info').innerText = `Wilayah Tugas: ${currentUser.wilayah}`;
+
+            const myCustomers = appCustomers.filter(c => c.petugasUsername === currentUser.username);
+            document.getElementById('petugas-total-count').innerText = `Total: ${myCustomers.length} Warga`;
+
+            // Populate Dropdown Input
+            const selectEl = document.getElementById('input-pelanggan-id');
+            selectEl.innerHTML = '<option value="">-- Pilih Pelanggan --</option>';
+            myCustomers.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.innerText = `${c.id} - ${c.name} (${c.status})`;
+                selectEl.appendChild(opt);
+            });
+
+            // Populate Table
+            const tbody = document.getElementById('petugas-table-body');
+            tbody.innerHTML = '';
+
+            if (myCustomers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">Belum ada pelanggan terdaftar di wilayah ini. Silakan tambah data atau import Excel.</td></tr>`;
+                return;
+            }
+
+            myCustomers.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono font-bold text-xs">${c.id}</td>
+                    <td class="py-3 px-4 font-bold text-slate-800">${c.name}</td>
+                    <td class="py-3 px-4 text-xs">${c.address}</td>
+                    <td class="py-3 px-4">
+                        <span class="${c.status === 'LUNAS' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-red-100 text-red-800 border-red-300'} text-xs font-bold px-2.5 py-1 rounded-full border">
+                            ${c.status}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 font-bold ${c.amount > 0 ? 'text-emerald-700' : 'text-slate-400'}">
+                        ${c.amount > 0 ? 'Rp ' + c.amount.toLocaleString('id-ID') : '-'}
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        ${c.status === 'LUNAS' 
+                            ? `<button onclick="openReceipt('${c.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded transition"><i class="fa-solid fa-receipt"></i> Struk</button>`
+                            : `<span class="text-xs text-slate-400 italic">Belum Bayar</span>`
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function handleInputIuran(e) {
+            e.preventDefault();
+            const custId = document.getElementById('input-pelanggan-id').value;
+            const month = document.getElementById('input-bulan').value;
+            const amount = parseInt(document.getElementById('input-nominal').value);
+
+            // Manual Input Validation range: 60.000 - 1.000.000
+            if (isNaN(amount) || amount < 60000 || amount > 1000000) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Nominal Tidak Valid!',
+                    text: 'Jumlah iuran manual harus berada di rentang Rp 60.000 - Rp 1.000.000'
+                });
+                return;
+            }
+
+            const custIndex = appCustomers.findIndex(c => c.id === custId);
+            if (custIndex !== -1) {
+                const d = new Date();
+                const payDateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+
+                appCustomers[custIndex].amount = amount;
+                appCustomers[custIndex].month = month;
+                appCustomers[custIndex].status = 'LUNAS';
+                appCustomers[custIndex].payDate = payDateStr;
+
+                saveData();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Pembayaran Berhasil!',
+                    text: `Status ${appCustomers[custIndex].name} kini LUNAS (Rp ${amount.toLocaleString('id-ID')})`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                renderPetugasDashboard();
+            }
+        }
+
+        function handleTambahPelanggan(e) {
+            e.preventDefault();
+            const name = document.getElementById('add-nama').value.trim();
+            const address = document.getElementById('add-alamat').value.trim();
+
+            const newId = 'REG-' + Math.floor(100 + Math.random() * 900);
+            appCustomers.push({
+                id: newId,
+                name: name,
+                address: address,
+                petugasUsername: currentUser.username,
+                month: 'Juni 2026',
+                amount: 0,
+                status: 'BELUM',
+                payDate: '-'
+            });
+
+            saveData();
+            Swal.fire({ icon: 'success', title: 'Pelanggan Ditambahkan', timer: 1500, showConfirmButton: false });
+            document.getElementById('add-nama').value = '';
+            document.getElementById('add-alamat').value = '';
+            renderPetugasDashboard();
+        }
+
+        // --- ADMIN MONITORING LOGIC ---
+        function renderAdminDashboard() {
+            // Populate Petugas Filter Dropdown
+            const filterPetugasSelect = document.getElementById('filter-petugas');
+            const petugasList = appUsers.filter(u => u.role === 'petugas');
+            
+            filterPetugasSelect.innerHTML = '<option value="ALL">Semua Petugas Lapangan</option>';
+            petugasList.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.username;
+                opt.innerText = `${p.name} (${p.wilayah})`;
+                filterPetugasSelect.appendChild(opt);
+            });
+
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const selectedPetugas = document.getElementById('filter-petugas').value;
+            const selectedStatus = document.getElementById('filter-status').value;
+            const searchText = document.getElementById('filter-search').value.toLowerCase();
+
+            let filtered = appCustomers.filter(c => {
+                const matchPetugas = (selectedPetugas === 'ALL' || c.petugasUsername === selectedPetugas);
+                const matchStatus = (selectedStatus === 'ALL' || c.status === selectedStatus);
+                const matchSearch = (c.name.toLowerCase().includes(searchText) || c.id.toLowerCase().includes(searchText) || c.address.toLowerCase().includes(searchText));
+                return matchPetugas && matchStatus && matchSearch;
+            });
+
+            // Update Statistics (Based on overall or filtered data)
+            const totalUang = appCustomers.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+            const lunasCount = appCustomers.filter(c => c.status === 'LUNAS').length;
+            const belumCount = appCustomers.filter(c => c.status === 'BELUM').length;
+
+            document.getElementById('stat-total-uang').innerText = 'Rp ' + totalUang.toLocaleString('id-ID');
+            document.getElementById('stat-lunas-count').innerText = lunasCount;
+            document.getElementById('stat-belum-count').innerText = belumCount;
+            document.getElementById('stat-total-pelanggan').innerText = appCustomers.length;
+
+            // Render Table
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">Tidak ada data pembayaran yang sesuai dengan filter.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(c => {
+                const petugasObj = appUsers.find(u => u.username === c.petugasUsername);
+                const petugasName = petugasObj ? petugasObj.name : c.petugasUsername;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono font-bold text-xs text-slate-600">${c.id}</td>
+                    <td class="py-3 px-4 font-bold text-slate-800">${c.name}</td>
+                    <td class="py-3 px-4 text-xs text-slate-600">${c.address}</td>
+                    <td class="py-3 px-4 text-xs"><span class="font-semibold text-slate-700">${petugasName}</span></td>
+                    <td class="py-3 px-4 text-xs">${c.month}</td>
+                    <td class="py-3 px-4 font-bold ${c.amount > 0 ? 'text-emerald-700' : 'text-slate-400'}">
+                        ${c.amount > 0 ? 'Rp ' + c.amount.toLocaleString('id-ID') : '-'}
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="${c.status === 'LUNAS' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'} text-xs font-bold px-2.5 py-1 rounded-full border">
+                            ${c.status}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        ${c.status === 'LUNAS' 
+                            ? `<button onclick="openReceipt('${c.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded transition"><i class="fa-solid fa-receipt"></i> Cetak</button>`
+                            : `<span class="text-xs text-slate-400 italic">-</span>`
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- RECEIPT MODAL LOGIC ---
+        function openReceipt(custId) {
+            const c = appCustomers.find(item => item.id === custId);
+            if (!c) return;
+
+            const petugasObj = appUsers.find(u => u.username === c.petugasUsername);
+
+            document.getElementById('rec-id').innerText = 'TRX-' + Math.floor(100000 + Math.random() * 900000);
+            document.getElementById('rec-date').innerText = c.payDate || '2026-06-01';
+            document.getElementById('rec-noreg').innerText = c.id;
+            document.getElementById('rec-nama').innerText = c.name;
+            document.getElementById('rec-alamat').innerText = c.address;
+            document.getElementById('rec-petugas').innerText = petugasObj ? petugasObj.name : c.petugasUsername;
+            document.getElementById('rec-bulan').innerText = c.month;
+            document.getElementById('rec-nominal').innerText = 'Rp ' + c.amount.toLocaleString('id-ID');
+
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+        }
+
+        // --- IMPORT & EXPORT EXCEL ENGINE (SheetJS) ---
+        function downloadTemplate() {
+            const templateData = [
+                { "No Registrasi": "REG-901", "Nama Warga": "I Wayan Contoh", "Alamat": "Jl. Padangsambian No. 1", "Nominal Iuran": 75000, "Status": "LUNAS", "Bulan": "Juni 2026" },
+                { "No Registrasi": "REG-902", "Nama Warga": "Ni Made Sample", "Alamat": "Jl. Gunung Agung Gg. 2", "Nominal Iuran": 0, "Status": "BELUM", "Bulan": "Juni 2026" }
+            ];
+
+            const worksheet = XLSX.utils.json_to_sheet(templateData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Template_Data_Warga");
+            XLSX.writeFile(workbook, "Template_Iuran_BUPDA.xlsx");
+        }
+
+        function exportExcel() {
+            let exportData = [];
+            if (currentUser.role === 'petugas') {
+                exportData = appCustomers.filter(c => c.petugasUsername === currentUser.username);
+            } else {
+                exportData = [...appCustomers];
+            }
+
+            const formatted = exportData.map(c => ({
+                "No Registrasi": c.id,
+                "Nama Warga": c.name,
+                "Alamat": c.address,
+                "Petugas ID": c.petugasUsername,
+                "Bulan": c.month,
+                "Nominal (Rp)": c.amount,
+                "Status Pembayaran": c.status,
+                "Waktu Pembayaran": c.payDate
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(formatted);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan_Iuran");
+            XLSX.writeFile(workbook, `Rekap_Iuran_BUPDA_${currentUser.username}.xlsx`);
+        }
+
+        function importExcel(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (json.length === 0) {
+                        Swal.fire({ icon: 'warning', title: 'File Kosong', text: 'Tidak ada data ditemukan di dalam file!' });
+                        return;
+                    }
+
+                    let countSuccess = 0;
+                    json.forEach(row => {
+                        const id = row["No Registrasi"] || ('REG-' + Math.floor(100 + Math.random() * 900));
+                        const name = row["Nama Warga"] || row["Nama"] || "Tanpa Nama";
+                        const address = row["Alamat"] || "-";
+                        let amount = parseInt(row["Nominal Iuran"] || row["Nominal (Rp)"] || 0);
+                        let status = (row["Status"] || row["Status Pembayaran"] || "BELUM").toUpperCase();
+                        const month = row["Bulan"] || "Juni 2026";
+
+                        if (amount < 60000 && status === 'LUNAS') {
+                            amount = 60000; // auto adjustment fallback
+                        }
+
+                        // Target assigned petugas
+                        const assignedPetugas = (currentUser.role === 'petugas') ? currentUser.username : (row["Petugas ID"] || 'petugas1');
+
+                        const existingIdx = appCustomers.findIndex(c => c.id === id);
+                        if (existingIdx !== -1) {
+                            appCustomers[existingIdx].name = name;
+                            appCustomers[existingIdx].address = address;
+                            appCustomers[existingIdx].amount = amount;
+                            appCustomers[existingIdx].status = status;
+                            appCustomers[existingIdx].month = month;
+                        } else {
+                            appCustomers.push({
+                                id: id,
+                                name: name,
+                                address: address,
+                                petugasUsername: assignedPetugas,
+                                month: month,
+                                amount: amount,
+                                status: status,
+                                payDate: status === 'LUNAS' ? '2026-06-01 10:00' : '-'
+                            });
+                        }
+                        countSuccess++;
+                    });
+
+                    saveData();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Import Berhasil!',
+                        text: `Berhasil meng-import ${countSuccess} data pelanggan.`
+                    });
+
+                    initAppView();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Format Salah', text: 'Gagal membaca file Excel/CSV. Pastikan format sesuai.' });
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- APP LAUNCH ---
+        window.addEventListener('DOMContentLoaded', () => {
+            initAppView();
+        });
+    </script>
+</body>
+</html>
